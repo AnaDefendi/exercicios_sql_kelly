@@ -179,3 +179,33 @@ SELECT date_format(data_despacho,'yyyy-MM') AS mes, pais_destino, estado,
   count(*) AS num_envios,
   sum(CASE WHEN data_entrega IS NOT NULL AND datediff(data_entrega,data_despacho)<=5 THEN 1 ELSE 0 END) AS entregas_no_prazo
 FROM workspace.grupo_condor.fact_envios GROUP BY 1,2,3;
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercício 1
+SELECT 
+    v.canal,
+    c.segmento,
+    SUM(v.montante_usd) AS total_receita,
+    COUNT(v.venda_id) AS quantidade_venda
+FROM fact_vendas v
+JOIN dim_clientes c 
+    ON v.cliente_id = c.cliente_id
+GROUP BY 
+    v.canal,
+    c.segmento
+ORDER BY 
+    total_receita DESC;
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercício 2
+SELECT 
+    pais,
+    formato, 
+    COUNT(loja_id) AS quantidade_lojas
+FROM dim_lojas
+WHERE formato != "ONLINE"
+GROUP BY 
+    pais,
+    formato;
