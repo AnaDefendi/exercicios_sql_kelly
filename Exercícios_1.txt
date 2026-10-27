@@ -1,0 +1,63 @@
+
+🟢 Nível Iniciante: SELECT, GROUP BY e JOINS
+
+
+Exercício 1: Ranking de Receita do Varejo por Canal e Segmento de Cliente
+
+• Objetivo de Negócio: O Diretor de Marketing quer saber quais canais (LOJA vs ONLINE) e segmentos de clientes (B2B vs B2C) trazem mais receita no varejo.
+• O que você vai praticar: JOIN simples, SUM, GROUP BY e ORDER BY.
+• Desafio: Faça um JOIN entre fact_vendas e dim_clientes. Agrupe os dados por canal e segmento, calculando o montante total vendido e a quantidade de vendas. Ordene do maior faturamento para o menor.
+
+Exercício 2: Perfil de Formato de Lojas por País
+
+• Objetivo de Negócio: A equipe de expansão quer entender a distribuição de formatos de lojas (SUPER, EXPRESS, ONLINE) nos países onde o grupo atua.
+• O que você vai praticar: COUNT, GROUP BY multi-coluna, filtros.
+• Desafio: Utilizando a tabela dim_lojas, agrupe os dados por pais e formato. Mostre a quantidade de lojas para cada combinação, filtrando para excluir o formato 'ONLINE' da contagem, focando apenas nas lojas físicas.
+
+
+🟡 Nível Intermediário: Agregações Avançadas e Cruzamento de Dados
+
+
+Exercício 3: Cruzamento de Vendas e Logística (Ticket vs Custo de Envio)
+
+• Objetivo de Negócio: A operação do Cóndor Cargo quer analisar se o custo do envio está muito alto em relação ao valor da mercadoria vendida para o país da Argentina ('AR').
+• O que você vai praticar: JOIN múltiplo, AVG, WHERE.
+• Desafio: Junte as tabelas fact_vendas e fact_envios através do venda_id. Filtre os dados onde o pais_destino seja 'AR'. Calcule a média do montante_usd da venda e a média do custo_envio_usd agrupados por categoria.
+
+Exercício 4: Análise de Risco de Crédito (Mora por País)
+
+• Objetivo de Negócio: O Cóndor Pagos precisa consolidar a carteira de crédito para entender o impacto financeiro de clientes inadimplentes.
+• O que você vai praticar: CASE WHEN interno no SUM, JOIN.
+• Desafio: Utilizando a tabela gold_carteira_creditos e a dim_clientes, traga o pais do cliente, o valor total da carteira (saldo_estimado_usd) e o valor total que está na faixa de mora '90+'.
+
+
+🔴 Nível Avançado: WINDOW FUNCTIONS (Analíticas e Particionadas)
+
+
+Exercício 5: Participação Percentual da Categoria no País (Market Share Interno)
+
+• Objetivo de Negócio: O time comercial precisa identificar qual o peso financeiro de cada categoria de produto dentro de cada país.
+• O que você vai praticar: Window Function com SUM() OVER (PARTITION BY).
+• Desafio: Utilizando a tabela gold_vendas_categoria, crie uma consulta que retorne: pais, categoria, a soma de receita_usd daquela categoria e uma coluna calculada com o % de representatividade daquela categoria sobre o total do respectivo país.
+
+Exercício 6: Evolução Mensal da Receita e Média Móvel (Análise de Tendência)
+
+• Objetivo de Negócio: O CFO quer avaliar a saúde financeira do grupo mês a mês, suavizando variações diárias abruptas.
+• O que você vai praticar: date_format, Window Function de Linhas (ROWS BETWEEN).
+• Desafio: Utilizando a tabela gold_receita_diaria, primeiro agrupe a receita por mês (ex: 2025-01). Em seguida, aplique uma Window Function para calcular a Média Móvel dos últimos 3 meses de receita acumulada do grupo.
+
+
+🔥 Exercício 7: Identificação de Clientes Cross-Sell (Varejo ➔ Crédito)
+
+• Contexto de Negócio: O time de Growth do Grupo Cóndor quer saber se a estratégia de Cross-Selling (venda cruzada) está funcionando. Eles precisam identificar quais clientes compraram um produto caro no Varejo (ELETRO) e, logo em seguida ou no mesmo período, contrataram um Crédito no Cóndor Pagos.
+• Objetivo do Exercício: Criar uma coluna contendo uma Flag (0 ou 1) que marque se o cliente possui um contrato de crédito ativo que foi originado depois dele já ser um cliente comprador de eletrodomésticos.
+• O que você vai praticar: LEFT JOIN, CASE WHEN combinado com a Window Function MAX() OVER (PARTITION BY ...).
+
+📋 O Desafio SQL:
+
+Escreva uma consulta utilizando as tabelas dim_clientes, fact_vendas e fact_creditos que siga os passos abaixo:
+1. Traga as colunas: cliente_id, nome do cliente e pais.
+2. Faça um cruzamento para identificar quais clientes compraram a categoria 'ELETRO' no varejo e quais possuem créditos com o status 'ATIVO'.
+3. Crie uma coluna calculada chamada flag_cross_sell:
+	• Ela deve receber 1 se o cliente comprou ELETRO E possui um crédito ATIVO na base.
+	• Ela deve receber 0 caso contrário.
