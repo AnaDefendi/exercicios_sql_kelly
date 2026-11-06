@@ -209,3 +209,42 @@ WHERE formato != "ONLINE"
 GROUP BY 
     pais,
     formato;
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercício 3
+SELECT 
+    v.categoria,
+    round(avg(v.montante_usd), 2) AS media_venda_usd,
+    round(avg(e.custo_envio_usd), 2) AS media_custo_envio_usd
+FROM workspace.grupo_condor.fact_vendas v
+JOIN workspace.grupo_condor.fact_envios e 
+  ON v.venda_id = e.venda_id
+WHERE e.pais_destino = 'AR'
+GROUP BY v.categoria
+ORDER BY media_venda_usd DESC;
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercício 4
+SELECT 
+    c.pais, 
+    SUM(gc.saldo_estimado_usd) AS carteira_total,
+
+    SUM(
+    CASE 
+        WHEN faixa_mora = "90+" 
+        THEN saldo_estimado_usd
+        ELSE 0
+    END 
+    ) AS carteira_mora_90_mais
+
+FROM workspace.grupo_condor.gold_carteira_creditos gc
+
+JOIN workspace.grupo_condor.dim_clientes c
+    ON gc.cliente_id = c.cliente_id
+GROUP BY 
+    c.pais
+ORDER BY
+    carteira_total DESC;
+
