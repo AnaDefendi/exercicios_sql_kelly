@@ -184,16 +184,16 @@ FROM workspace.grupo_condor.fact_envios GROUP BY 1,2,3;
 
 -- DBTITLE 1,Exercício 1
 SELECT 
-    v.canal,
-    c.segmento,
-    SUM(v.montante_usd) AS total_receita,
-    COUNT(v.venda_id) AS quantidade_venda
-FROM fact_vendas v
-JOIN dim_clientes c 
-    ON v.cliente_id = c.cliente_id
+    ven.canal,
+    cli.segmento,
+    SUM(ven.montante_usd) AS total_receita,
+    COUNT(ven.venda_id) AS quantidade_venda
+FROM workspace.grupo_condor.fact_vendas ven
+JOIN workspace.grupo_condor.dim_clientes cli 
+    ON ven.cliente_id = cli.cliente_id
 GROUP BY 
-    v.canal,
-    c.segmento
+    ven.canal,
+    cli.segmento
 ORDER BY 
     total_receita DESC;
 
@@ -204,7 +204,7 @@ SELECT
     pais,
     formato, 
     COUNT(loja_id) AS quantidade_lojas
-FROM dim_lojas
+FROM workspace.grupo_condor.dim_lojas
 WHERE formato != "ONLINE"
 GROUP BY 
     pais,
@@ -234,8 +234,8 @@ ORDER BY media_venda_usd DESC;
 
 -- DBTITLE 1,Exercício 4
 SELECT 
-    c.pais, 
-    SUM(gc.saldo_estimado_usd) AS carteira_total,
+    cli.pais, 
+    SUM(goldcartc.saldo_estimado_usd) AS carteira_total,
 
     SUM(
     CASE 
@@ -245,12 +245,12 @@ SELECT
     END 
     ) AS carteira_mora_90_mais
 
-FROM workspace.grupo_condor.gold_carteira_creditos gc
+FROM workspace.grupo_condor.gold_carteira_creditos goldcartc
 
-JOIN workspace.grupo_condor.dim_clientes c
-    ON gc.cliente_id = c.cliente_id
+JOIN workspace.grupo_condor.dim_clientes cli
+    ON goldcartc.cliente_id = cli.cliente_id
 GROUP BY 
-    c.pais
+    cli.pais
 ORDER BY
     carteira_total DESC;
 
