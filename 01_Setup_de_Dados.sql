@@ -254,3 +254,78 @@ GROUP BY
 ORDER BY
     carteira_total DESC;
 
+
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercício 5
+select
+    pais,
+    categoria,
+    sum(receita_usd) as receita_categoria,
+
+    sum(sum(receita_usd)) over (partition by pais) as total_pais,
+    round(sum(receita_usd) /
+            sum(sum(receita_usd)) 
+            over (partition by pais)*100, 2 
+        ) as percentual_categoria
+
+from workspace.grupo_condor.gold_vendas_categoria
+
+group by all 
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercício 6 - apenas últimos 3 meses
+WITH receita_mensal AS (
+
+    SELECT
+        date_format(data, 'yyyy-MM') AS mes,
+        SUM(receita_usd) AS receita_mensal
+
+    FROM workspace.grupo_condor.gold_receita_diaria
+
+    GROUP BY date_format(data, 'yyyy-MM')
+
+)
+
+SELECT
+    mes,
+    receita_mensal,
+
+    round(AVG(receita_mensal) OVER (
+        ORDER BY mes
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),2
+        ) AS media_movel_3_meses
+        
+FROM receita_mensal
+ORDER BY mes DESC
+LIMIT 3;
+
+
+-- COMMAND ----------
+
+-- DBTITLE 1,Exercicio 6 - calculo com media movel por todos os meses
+WITH receita_mensal AS (
+
+    SELECT
+        date_format(data, 'yyyy-MM') AS mes,
+        SUM(receita_usd) AS receita_mensal
+
+    FROM workspace.grupo_condor.gold_receita_diaria
+
+    GROUP BY date_format(data, 'yyyy-MM')
+
+)
+
+SELECT
+    mes,
+    receita_mensal,
+
+    round(AVG(receita_mensal) OVER (
+        ORDER BY mes
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),2
+        ) AS media_movel_3_meses
+
+FROM receita_mensal
+WHERE mes >= '2025-03'
