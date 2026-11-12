@@ -239,7 +239,7 @@ SELECT
 
     SUM(
     CASE 
-        WHEN faixa_mora = "90+" 
+        WHEN faixa_mora = "90+"
         THEN saldo_estimado_usd
         ELSE 0
     END 
@@ -259,6 +259,12 @@ ORDER BY
 -- COMMAND ----------
 
 -- DBTITLE 1,Exercício 5
+
+-- Exercício 5: Participação Percentual da Categoria no País (Market Share Interno)
+-- • Objetivo de Negócio: O time comercial precisa identificar qual o peso financeiro de cada categoria de produto dentro de cada país.
+-- • O que você vai praticar: Window Function com SUM() OVER (PARTITION BY).
+-- • Desafio: Utilizando a tabela gold_vendas_categoria, crie uma consulta que retorne: pais, categoria, a soma de receita_usd daquela categoria e uma coluna calculada com o % de representatividade daquela categoria sobre o total do respectivo país.
+
 select
     pais,
     categoria,
@@ -271,61 +277,88 @@ select
         ) as percentual_categoria
 
 from workspace.grupo_condor.gold_vendas_categoria
+--- sum(sum(receita_usd): 
+--          - SUM interno: soma as receitas diárias para formar o total mensal;
+--          - SUM externo: soma os totais mensais por país;
+--  round(sum(receita_usd) / sum(sum(receita_usd)) over (partition by pais)*100, 2):
+--          - SUM interno: soma as receitas por categoria para formar o total por país;
+--          - SUM externo: soma os totais por país;
+--          - over (partition by pais): agrupa os totais por país.
 
 group by all 
 
 -- COMMAND ----------
 
 -- DBTITLE 1,Exercício 6 - apenas últimos 3 meses
-WITH receita_mensal AS (
+-- Exercício 6: Evolução Mensal da Receita e Média Móvel (Análise de Tendência)
 
-    SELECT
-        date_format(data, 'yyyy-MM') AS mes,
-        SUM(receita_usd) AS receita_mensal
+-- • Objetivo de Negócio: O CFO quer avaliar a saúde financeira do grupo mês a mês, suavizando variações diárias abruptas.
+-- • O que você vai praticar: date_format, Window Function de Linhas (ROWS BETWEEN).
+-- • Desafio: Utilizando a tabela gold_receita_diaria, primeiro agrupe a receita por mês (ex: 2025-01). Em seguida, aplique uma Window Function para calcular a Média Móvel dos últimos 3 meses de receita acumulada do grupo.
 
-    FROM workspace.grupo_condor.gold_receita_diaria
+with receita_mensal as (
 
-    GROUP BY date_format(data, 'yyyy-MM')
+    select
+        date_format(data, 'yyyy-MM') as mes,
+        SUM(receita_usd) as receita_mensal
+
+    from workspace.grupo_condor.gold_receita_diaria
+
+    group by date_format(data, 'yyyy-MM')
 
 )
 
-SELECT
+select
     mes,
     receita_mensal,
 
-    round(AVG(receita_mensal) OVER (
-        ORDER BY mes
-        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),2
-        ) AS media_movel_3_meses
+    round(avg(receita_mensal) over (
+        order by mes
+        rows between 2 preceding and current row),2
+        ) as  media_movel_3_meses
         
-FROM receita_mensal
-ORDER BY mes DESC
-LIMIT 3;
+from receita_mensal
+order by mes desc
+limit 3;
+
+-- with receita_mensal as: cria uma CTE (Common Table Expression) para agrupar a receita financeira acumulada do grupo condor  por mês;
+-- group by date_format(data, 'yyyy-MM'): agrupa os resultados por mês no formato ANO-MÊS;
+-- rows between 2 preceding and current row: define o intervalo de linhas para a Window Function, considerando os últimos 3 meses. ows between 2 preceding indica que a janela começa 2 linhas antes da linha atual, e current row indica que a janela termina na linha atual;
+-- limit 3: limita o resultado a 3 linhas, mostrando os últimos 3 meses
 
 
 -- COMMAND ----------
 
 -- DBTITLE 1,Exercicio 6 - calculo com media movel por todos os meses
-WITH receita_mensal AS (
+-- Exercício 6: Evolução Mensal da Receita e Média Móvel (Análise de Tendência)
 
-    SELECT
-        date_format(data, 'yyyy-MM') AS mes,
-        SUM(receita_usd) AS receita_mensal
+-- • Objetivo de Negócio: O CFO quer avaliar a saúde financeira do grupo mês a mês, suavizando variações diárias abruptas.
+-- • O que você vai praticar: date_format, Window Function de Linhas (ROWS BETWEEN).
+-- • Desafio: Utilizando a tabela gold_receita_diaria, primeiro agrupe a receita por mês (ex: 2025-01). Em seguida, aplique uma Window Function para calcular a Média Móvel dos últimos 3 meses de receita acumulada do grupo.
 
-    FROM workspace.grupo_condor.gold_receita_diaria
+with receita_mensal as (
 
-    GROUP BY date_format(data, 'yyyy-MM')
+    select
+        date_format(data, 'yyyy-MM') as mes,
+        SUM(receita_usd) as receita_mensal
+
+    from workspace.grupo_condor.gold_receita_diaria
+
+    group by date_format(data, 'yyyy-MM')
 
 )
 
-SELECT
+select
     mes,
     receita_mensal,
 
-    round(AVG(receita_mensal) OVER (
-        ORDER BY mes
-        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),2
-        ) AS media_movel_3_meses
+    round(avg(receita_mensal) over (
+        order by mes
+        rows between 2 preceding and current row),2
+        ) as  media_movel_3_meses
+        
+from receita_mensal
+where mes >= '2025-03'
+order by mes desc;
 
-FROM receita_mensal
-WHERE mes >= '2025-03'
+-- Variação de resposta com a média móvel de todos os meses: 2025-03 até 2026-06, começando apenas na partir de março de 2025, pois a janela de 3 meses requer dados de pelo menos 3 meses anteriores.
