@@ -183,6 +183,12 @@ FROM workspace.grupo_condor.fact_envios GROUP BY 1,2,3;
 -- COMMAND ----------
 
 -- DBTITLE 1,Exercício 1
+-- Exercício 1: Ranking de Receita do Varejo por Canal e Segmento de Cliente
+
+-- • Objetivo de Negócio: O Diretor de Marketing quer saber quais canais (LOJA vs ONLINE) e segmentos de clientes (B2B vs B2C) trazem mais receita no varejo.
+-- • O que você vai praticar: JOIN simples, SUM, GROUP BY e ORDER BY.
+-- • Desafio: Faça um JOIN entre fact_vendas e dim_clientes. Agrupe os dados por canal e segmento, calculando o montante total vendido e a quantidade de vendas. Ordene do maior faturamento para o menor.
+
 SELECT 
     ven.canal,
     cli.segmento,
@@ -199,7 +205,37 @@ ORDER BY
 
 -- COMMAND ----------
 
+-- Exercício 1: Ranking de Receita do Varejo por Canal e Segmento de Cliente
+
+-- • Objetivo de Negócio: O Diretor de Marketing quer saber quais canais (LOJA vs ONLINE) e segmentos de clientes (B2B vs B2C) trazem mais receita no varejo.
+-- • O que você vai praticar: JOIN simples, SUM, GROUP BY e ORDER BY.
+-- • Desafio: Faça um JOIN entre fact_vendas e dim_clientes. Agrupe os dados por canal e segmento, calculando o montante total vendido e a quantidade de vendas. Ordene do maior faturamento para o menor.
+
+select -- seleciono o canal e crio o apelido ven e seleciono o canal (da tabela de vendas) segmento(da tabela de clientes) com apelido criado cli.
+ven.canal,
+cli.segmento,
+sum(ven.montante_usd) as montante_total_ven, -- soma o montante total de vendas
+count(ven.venda_id) as quantidade_de_vendas -- conta a quantidade de vendas
+
+from workspace.grupo_condor.fact_vendas as ven -- informo de onde vem o apelido ven craido, que é da tabela do grupo condor fact_vendas
+join workspace.grupo_condor.dim_clientes as cli -- faço o join para informar o apelido cli criado, proveniente da tabela do gp condor dim_clientes
+on ven.cliente_id = cli.cliente_id -- conexão entre as tabelas, pois em ambas temos o cliente_id com seus respectivos apelidos,
+
+group by all  -- aqui coloco by all, pois acima já foram selecionados os canais e segmentos.
+order by montante_total_ven DESC; -- ordeno pelo montante total de vendas de forma decrescente.
+
+
+
+
+-- COMMAND ----------
+
 -- DBTITLE 1,Exercício 2
+-- Exercício 2: Perfil de Formato de Lojas por País
+
+-- • Objetivo de Negócio: A equipe de expansão quer entender a distribuição de formatos de lojas (SUPER, EXPRESS, ONLINE) nos países onde o grupo atua.
+-- • O que você vai praticar: COUNT, GROUP BY multi-coluna, filtros.
+-- • Desafio: Utilizando a tabela dim_lojas, agrupe os dados por pais e formato. Mostre a quantidade de lojas para cada combinação, filtrando para excluir o formato 'ONLINE' da contagem, focando apenas nas lojas físicas.
+
 SELECT 
     pais,
     formato, 
@@ -212,7 +248,30 @@ GROUP BY
 
 -- COMMAND ----------
 
+-- Exercício 2: Perfil de Formato de Lojas por País
+
+-- • Objetivo de Negócio: A equipe de expansão quer entender a distribuição de formatos de lojas (SUPER, EXPRESS, ONLINE) nos países onde o grupo atua.
+-- • O que você vai praticar: COUNT, GROUP BY multi-coluna, filtros.
+-- • Desafio: Utilizando a tabela dim_lojas, agrupe os dados por pais e formato. Mostre a quantidade de lojas para cada combinação, filtrando para excluir o formato 'ONLINE' da contagem, focando apenas nas lojas físicas.
+
+SELECT -- seleciono o pais e o formato, por que não coloco os apelidos que criei no exercicio 1? pois aqui trabalho apenas com a tabela dim_lojas, enquanto no de cima eu tinha duas tabelas, então existiu a necessidade de criar apelidos para esses termos selecionados.
+    pais,
+    formato,
+    count(loja_id) AS quantidade_lojas -- contagem de lojas_id para obter o resultado final em quantidade de lojas
+    FROM workspace.grupo_condor.dim_lojas -- localizado na planilha dim_lojas
+    WHERE formato != "ONLINE" -- filtro APENAS as lojas fisicas, != significa diferente,
+    GROUP BY ALL -- mais uma vez coloco by all pq os parametros foram selecionados anteriormente, seria redundante se eu colocasse novamente aqui.
+
+
+-- COMMAND ----------
+
 -- DBTITLE 1,Exercício 3
+-- Exercício 3: Cruzamento de Vendas e Logística (Ticket vs Custo de Envio)
+
+-- • Objetivo de Negócio: A operação do Cóndor Cargo quer analisar se o custo do envio está muito alto em relação ao valor da mercadoria vendida para o país da Argentina ('AR').
+-- • O que você vai praticar: JOIN múltiplo, AVG, WHERE.
+-- • Desafio: Junte as tabelas fact_vendas e fact_envios através do venda_id. Filtre os dados onde o pais_destino seja 'AR'. Calcule a média do montante_usd da venda e a média do custo_envio_usd agrupados por categoria.
+
 SELECT 
     v.categoria,
     round(avg(v.montante_usd), 2) AS media_venda_usd,
@@ -232,7 +291,32 @@ ORDER BY media_venda_usd DESC;
 
 -- COMMAND ----------
 
+-- DBTITLE 1,Exercício 3
+-- Exercício 3: Cruzamento de Vendas e Logística (Ticket vs Custo de Envio)
+
+-- • Objetivo de Negócio: A operação do Cóndor Cargo quer analisar se o custo do envio está muito alto em relação ao valor da mercadoria vendida para o país da Argentina ('AR').
+-- • O que você vai praticar: JOIN múltiplo, AVG, WHERE.
+-- • Desafio: Junte as tabelas fact_vendas e fact_envios através do venda_id. Filtre os dados onde o pais_destino seja 'AR'. Calcule a média do montante_usd da venda e a média do custo_envio_usd agrupados por categoria.
+
+SELECT
+    ven.categoria,
+    round(avg(ven.montante_usd), 2) AS media_montante_venda_usd,
+    round(avg(env.custo_envio_usd), 2) AS media_custo_envio_usd
+FROM workspace.grupo_condor.fact_vendas ven
+JOIN workspace.grupo_condor.fact_envios env
+    on ven.venda_id = env.venda_id
+WHERE env.pais_destino = "AR"
+GROUP BY ALL;
+
+-- COMMAND ----------
+
 -- DBTITLE 1,Exercício 4
+-- Exercício 4: Análise de Risco de Crédito (Mora por País)
+
+-- • Objetivo de Negócio: O Cóndor Pagos precisa consolidar a carteira de crédito para entender o impacto financeiro de clientes inadimplentes.
+-- • O que você vai praticar: CASE WHEN interno no SUM, JOIN.
+-- • Desafio: Utilizando a tabela gold_carteira_creditos e a dim_clientes, traga o pais do cliente, o valor total da carteira (saldo_estimado_usd) e o valor total que está na faixa de mora '90+'.
+
 SELECT 
     cli.pais, 
     SUM(goldcartc.saldo_estimado_usd) AS carteira_total,
@@ -265,27 +349,20 @@ ORDER BY
 -- • O que você vai praticar: Window Function com SUM() OVER (PARTITION BY).
 -- • Desafio: Utilizando a tabela gold_vendas_categoria, crie uma consulta que retorne: pais, categoria, a soma de receita_usd daquela categoria e uma coluna calculada com o % de representatividade daquela categoria sobre o total do respectivo país.
 
-select
+select -- seleciono os parametros
     pais,
     categoria,
-    sum(receita_usd) as receita_categoria,
+    sum(receita_usd) as receita_categoria, -- somo a receita usd para me dar o resultado daquela categoria
 
-    sum(sum(receita_usd)) over (partition by pais) as total_pais,
-    round(sum(receita_usd) /
+    sum(sum(receita_usd)) over (partition by pais) as total_pais, -- somo o total de receita por pais, iniciando com as receitas diárias, depois da soma das receitas diárias eu faço a soma total daquele pais, assim conseguindo fazer a soma total do país sem perder as categorias em um único resultado.
+    round(sum(receita_usd) / 
             sum(sum(receita_usd)) 
             over (partition by pais)*100, 2 
-        ) as percentual_categoria
+        ) as percentual_categoria -- para obtermos o percentual de cada categoria, precisamos dividir a soma daquela categoria pelo total do país, depois multiplicamos por 100 para obtermos o percentual, por fim arredondamos o resultado para 2 casas decimais.
 
-from workspace.grupo_condor.gold_vendas_categoria
---- sum(sum(receita_usd): 
---          - SUM interno: soma as receitas diárias para formar o total mensal;
---          - SUM externo: soma os totais mensais por país;
---  round(sum(receita_usd) / sum(sum(receita_usd)) over (partition by pais)*100, 2):
---          - SUM interno: soma as receitas por categoria para formar o total por país;
---          - SUM externo: soma os totais por país;
---          - over (partition by pais): agrupa os totais por país.
+from workspace.grupo_condor.gold_vendas_categoria -- dados utilizados da tabela gold_vendas_categoria
 
-group by all 
+group by all -- coloco group all pois acima no select já indiquiei os parâmetros que serão utilizados. 
 
 -- COMMAND ----------
 
@@ -296,35 +373,32 @@ group by all
 -- • O que você vai praticar: date_format, Window Function de Linhas (ROWS BETWEEN).
 -- • Desafio: Utilizando a tabela gold_receita_diaria, primeiro agrupe a receita por mês (ex: 2025-01). Em seguida, aplique uma Window Function para calcular a Média Móvel dos últimos 3 meses de receita acumulada do grupo.
 
-with receita_mensal as (
+with receita_mensal as ( -- crio inicialmente uma CTE (Common Table Expression, gostei de aprender sobre isso) para determinar como agrupar a receita financeira acumulada do grupo condor  por mês;
 
     select
         date_format(data, 'yyyy-MM') as mes,
-        SUM(receita_usd) as receita_mensal
+        SUM(receita_usd) as receita_mensal -- primeiro agrupamos a receita_mensal por mês, informando qual é o formato de data que quero exibir no resultado final significando o mês. Após isso, eu denomino que a soma dos valores da coluna receita_usd será a receita_mensal.
 
-    from workspace.grupo_condor.gold_receita_diaria
+    from workspace.grupo_condor.gold_receita_diaria -- a tabela a ser utilizada é a gold_receita_diaria
 
-    group by date_format(data, 'yyyy-MM')
+    group by date_format(data, 'yyyy-MM') -- agrupamos a receita_mensal por mês, informando qual é o formato de data que quero exibir no resultado final significando o mês.
 
 )
 
-select
+select -- faço um select para exibir os resultados discutidos acima
     mes,
     receita_mensal,
 
-    round(avg(receita_mensal) over (
+    round(avg(receita_mensal) over ( 
         order by mes
         rows between 2 preceding and current row),2
-        ) as  media_movel_3_meses
+        ) as  media_movel_3_meses -- aqui faço a media da receita_mensal usando a window function, onde a janela é definida por 3 meses, onde o 2 preceding indica que a janela começa 2 linhas antes da linha atual, e current row indica que a janela termina na linha atual
         
-from receita_mensal
-order by mes desc
-limit 3;
+from receita_mensal -- aqui o from é de uma CTE criada acima, portanto não é necessário colocar o nome da tabela.
+order by mes desc -- ordeno por mês em ordem decrescente
+limit 3; -- adiciono um limite de apenas 3 meses, o que foi pedido pelo CTO.
 
--- with receita_mensal as: cria uma CTE (Common Table Expression) para agrupar a receita financeira acumulada do grupo condor  por mês;
--- group by date_format(data, 'yyyy-MM'): agrupa os resultados por mês no formato ANO-MÊS;
--- rows between 2 preceding and current row: define o intervalo de linhas para a Window Function, considerando os últimos 3 meses. ows between 2 preceding indica que a janela começa 2 linhas antes da linha atual, e current row indica que a janela termina na linha atual;
--- limit 3: limita o resultado a 3 linhas, mostrando os últimos 3 meses
+
 
 
 -- COMMAND ----------
@@ -336,29 +410,28 @@ limit 3;
 -- • O que você vai praticar: date_format, Window Function de Linhas (ROWS BETWEEN).
 -- • Desafio: Utilizando a tabela gold_receita_diaria, primeiro agrupe a receita por mês (ex: 2025-01). Em seguida, aplique uma Window Function para calcular a Média Móvel dos últimos 3 meses de receita acumulada do grupo.
 
-with receita_mensal as (
+with receita_mensal as ( -- crio inicialmente uma CTE (Common Table Expression, gostei de aprender sobre isso) para determinar como agrupar a receita financeira acumulada do grupo condor  por mês;
 
     select
         date_format(data, 'yyyy-MM') as mes,
-        SUM(receita_usd) as receita_mensal
+        SUM(receita_usd) as receita_mensal -- primeiro agrupamos a receita_mensal por mês, informando qual é o formato de data que quero exibir no resultado final significando o mês. Após isso, eu denomino que a soma dos valores da coluna receita_usd será a receita_mensal.
 
-    from workspace.grupo_condor.gold_receita_diaria
+    from workspace.grupo_condor.gold_receita_diaria -- a tabela a ser utilizada é a gold_receita_diaria
 
-    group by date_format(data, 'yyyy-MM')
+    group by date_format(data, 'yyyy-MM') -- agrupamos a receita_mensal por mês, informando qual é o formato de data que quero exibir no resultado final significando o mês.
 
 )
 
-select
+select -- faço um select para exibir os resultados discutidos acima
     mes,
     receita_mensal,
 
-    round(avg(receita_mensal) over (
+    round(avg(receita_mensal) over ( 
         order by mes
         rows between 2 preceding and current row),2
-        ) as  media_movel_3_meses
+        ) as  media_movel_3_meses -- aqui faço a media da receita_mensal usando a window function, onde a janela é definida por 3 meses, onde o 2 preceding indica que a janela começa 2 linhas antes da linha atual, e current row indica que a janela termina na linha atual
         
-from receita_mensal
-where mes >= '2025-03'
-order by mes desc;
+from receita_mensal -- aqui o from é de uma CTE criada acima, portanto não é necessário colocar o nome da tabela.
+where mes >= '2025-03' -- por que seleciono o where? por que precisamos de 3 meses para calcular a média móvel, logo, o mês mais antigo que pode ser considerado é o 2025-03.
+order by mes desc; -- ordenando por mês em ordem decrescente
 
--- Variação de resposta com a média móvel de todos os meses: 2025-03 até 2026-06, começando apenas na partir de março de 2025, pois a janela de 3 meses requer dados de pelo menos 3 meses anteriores.
