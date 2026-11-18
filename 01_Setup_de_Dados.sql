@@ -182,29 +182,6 @@ FROM workspace.grupo_condor.fact_envios GROUP BY 1,2,3;
 
 -- COMMAND ----------
 
--- DBTITLE 1,Exercício 1
--- Exercício 1: Ranking de Receita do Varejo por Canal e Segmento de Cliente
-
--- • Objetivo de Negócio: O Diretor de Marketing quer saber quais canais (LOJA vs ONLINE) e segmentos de clientes (B2B vs B2C) trazem mais receita no varejo.
--- • O que você vai praticar: JOIN simples, SUM, GROUP BY e ORDER BY.
--- • Desafio: Faça um JOIN entre fact_vendas e dim_clientes. Agrupe os dados por canal e segmento, calculando o montante total vendido e a quantidade de vendas. Ordene do maior faturamento para o menor.
-
-SELECT 
-    ven.canal,
-    cli.segmento,
-    SUM(ven.montante_usd) AS total_receita,
-    COUNT(ven.venda_id) AS quantidade_venda
-FROM workspace.grupo_condor.fact_vendas ven
-JOIN workspace.grupo_condor.dim_clientes cli 
-    ON ven.cliente_id = cli.cliente_id
-GROUP BY 
-    ven.canal,
-    cli.segmento
-ORDER BY 
-    total_receita DESC;
-
--- COMMAND ----------
-
 -- Exercício 1: Ranking de Receita do Varejo por Canal e Segmento de Cliente
 
 -- • Objetivo de Negócio: O Diretor de Marketing quer saber quais canais (LOJA vs ONLINE) e segmentos de clientes (B2B vs B2C) trazem mais receita no varejo.
@@ -226,25 +203,6 @@ order by montante_total_ven DESC; -- ordeno pelo montante total de vendas de for
 
 
 
-
--- COMMAND ----------
-
--- DBTITLE 1,Exercício 2
--- Exercício 2: Perfil de Formato de Lojas por País
-
--- • Objetivo de Negócio: A equipe de expansão quer entender a distribuição de formatos de lojas (SUPER, EXPRESS, ONLINE) nos países onde o grupo atua.
--- • O que você vai praticar: COUNT, GROUP BY multi-coluna, filtros.
--- • Desafio: Utilizando a tabela dim_lojas, agrupe os dados por pais e formato. Mostre a quantidade de lojas para cada combinação, filtrando para excluir o formato 'ONLINE' da contagem, focando apenas nas lojas físicas.
-
-SELECT 
-    pais,
-    formato, 
-    COUNT(loja_id) AS quantidade_lojas
-FROM workspace.grupo_condor.dim_lojas
-WHERE formato != "ONLINE"
-GROUP BY 
-    pais,
-    formato;
 
 -- COMMAND ----------
 
@@ -272,72 +230,42 @@ SELECT -- seleciono o pais e o formato, por que não coloco os apelidos que crie
 -- • O que você vai praticar: JOIN múltiplo, AVG, WHERE.
 -- • Desafio: Junte as tabelas fact_vendas e fact_envios através do venda_id. Filtre os dados onde o pais_destino seja 'AR'. Calcule a média do montante_usd da venda e a média do custo_envio_usd agrupados por categoria.
 
-SELECT 
-    v.categoria,
-    round(avg(v.montante_usd), 2) AS media_venda_usd,
-    round(avg(e.custo_envio_usd), 2) AS media_custo_envio_usd
-
-FROM workspace.grupo_condor.fact_vendas v
-
-JOIN workspace.grupo_condor.fact_envios e 
-
-  ON v.venda_id = e.venda_id
-
-WHERE e.pais_destino = 'AR'
-
-GROUP BY v.categoria
-
-ORDER BY media_venda_usd DESC;
-
--- COMMAND ----------
-
--- DBTITLE 1,Exercício 3
--- Exercício 3: Cruzamento de Vendas e Logística (Ticket vs Custo de Envio)
-
--- • Objetivo de Negócio: A operação do Cóndor Cargo quer analisar se o custo do envio está muito alto em relação ao valor da mercadoria vendida para o país da Argentina ('AR').
--- • O que você vai praticar: JOIN múltiplo, AVG, WHERE.
--- • Desafio: Junte as tabelas fact_vendas e fact_envios através do venda_id. Filtre os dados onde o pais_destino seja 'AR'. Calcule a média do montante_usd da venda e a média do custo_envio_usd agrupados por categoria.
-
-SELECT
+SELECT -- seleciono a tabela vendas e a categoria
     ven.categoria,
-    round(avg(ven.montante_usd), 2) AS media_montante_venda_usd,
-    round(avg(env.custo_envio_usd), 2) AS media_custo_envio_usd
-FROM workspace.grupo_condor.fact_vendas ven
-JOIN workspace.grupo_condor.fact_envios env
-    on ven.venda_id = env.venda_id
-WHERE env.pais_destino = "AR"
-GROUP BY ALL;
+    round(avg(ven.montante_usd), 2) AS media_montante_venda_usd, -- faço a média do montante_usd, arredondando para 2 casas decimais, criando o apelido media_montante_venda_usd.
+    round(avg(env.custo_envio_usd), 2) AS media_custo_envio_usd -- faço a média do custo_envio_usd, arredondando para 2 casas decimais, criando o apelido media_custo_envio_usd.
+FROM workspace.grupo_condor.fact_vendas ven -- localizo a tabela fact_vendas, criando o apelido ven
+JOIN workspace.grupo_condor.fact_envios env -- localizo a tabela fact_envios, junto as tabelas com o JOIN, criando o apelido env.
+    on ven.venda_id = env.venda_id -- o ponto de junção (ON) entre as tabelas para conseguirmos ter acesso aos dados das duas tabelas, onde o venda_id da tabela ven é igual ao venda_id da tabela env.
+WHERE env.pais_destino = "AR" -- filtro onde o pais_destino para ser a AR
+GROUP BY ALL; -- agrupo por todos os parametros selecionados.
 
 -- COMMAND ----------
 
--- DBTITLE 1,Exercício 4
 -- Exercício 4: Análise de Risco de Crédito (Mora por País)
 
 -- • Objetivo de Negócio: O Cóndor Pagos precisa consolidar a carteira de crédito para entender o impacto financeiro de clientes inadimplentes.
 -- • O que você vai praticar: CASE WHEN interno no SUM, JOIN.
 -- • Desafio: Utilizando a tabela gold_carteira_creditos e a dim_clientes, traga o pais do cliente, o valor total da carteira (saldo_estimado_usd) e o valor total que está na faixa de mora '90+'.
 
-SELECT 
-    cli.pais, 
-    SUM(goldcartc.saldo_estimado_usd) AS carteira_total,
+SELECT -- seleciono os parâmetros
+   cli.pais, 
+   SUM(goldcartc.saldo_estimado_usd) AS valor_total_carteira, -- soma da gold_carteira_credito.saldo_estimado_usd como o valor_total_carteira e para isto eu faço a soma total da gold_carteira_credito com os critérios abaixo:
+   SUM( -- adiciono uma função SUM para somar os valores da gold_carteira_credito.saldo_estimado_usd
+    CASE -- com o case when definimos um critério antes de fazer a soma.
+        WHEN faixa_mora = "90+" -- agrupar valores onde a faixa mora é igual a 90+
+        THEN saldo_estimado_usd -- ai sim somar o saldo estimado usd
+        ELSE 0 -- caso não seja 90+ o saldo estimado usd será 0
+    END
+   ) AS valor_total_mora_90_mais -- totalizando o valor total da carteira de mora 90 mais
 
-    SUM(
-    CASE 
-        WHEN faixa_mora = "90+"
-        THEN saldo_estimado_usd
-        ELSE 0
-    END 
-    ) AS carteira_mora_90_mais
-
-FROM workspace.grupo_condor.gold_carteira_creditos goldcartc
-
-JOIN workspace.grupo_condor.dim_clientes cli
-    ON goldcartc.cliente_id = cli.cliente_id
-GROUP BY 
-    cli.pais
+FROM workspace.grupo_condor.gold_carteira_creditos goldcartc -- localizo a primeira tabela
+JOIN workspace.grupo_condor.dim_clientes cli -- com o join eu adiciono a outra tabela que preciso para fazer o cruzamento
+    ON goldcartc.cliente_id = cli.cliente_id -- ponto onde as duas tabelas se conversam, que seria o cliente_id.
+GROUP BY ALL -- agrupar por todos os parametros selecionados anteriormente
 ORDER BY
-    carteira_total DESC;
-
+    valor_total_carteira DESC; -- ordeno por o valor total da carteira em ordem decrescente.
+ 
 
 
 -- COMMAND ----------
